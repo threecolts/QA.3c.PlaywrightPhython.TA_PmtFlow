@@ -1,30 +1,25 @@
 import os
 import re
-
 from playwright.sync_api import sync_playwright, expect
-from pytest_playwright.pytest_playwright import playwright
+from dotenv import load_dotenv
+load_dotenv()
 
 from TA_Payment_Flow.tests.common_functions import unique_credentials, display_initial_page
 
-def enter_cc_details(page):
-    # Enter full name on card
-    page.get_by_placeholder(" ", exact=True).fill("John Doe")
 
-    
+def enter_an_invalid_promo_code(page, promocode):
+    # Enters an invalid code, verifies the error message, clicks the Cancel
+    # button, verify the changed label text
+    page.get_by_text("Enter a promo code").click()
+    page.locator("div").filter(has_text=re.compile(r"^ApplyPromo code$")).get_by_placeholder(" ").fill(promocode)
+    page.locator("button").filter(has_text="Apply").click()
+    expect(page.get_by_role("tooltip")).to_contain_text("Sorry, this code isn't valid")
+    page.locator("button").filter(has_text="Cancel").click()
+    expect(page.get_by_role("dialog")).to_contain_text("Enter a different promo code")
 
-
-
-    iframe = page.frame_locator("iframe[name^='__privateStripeFrame']")
-    iframe.locator("/html[1]/body[1]/div[6]/div[1]/div[2]/div[1]/div[2]/div[1]/div[2]/div[1]/div[1]/div[3]/div[1]/div[1]").click()
-    iframe.locator("/html[1]/body[1]/div[6]/div[1]/div[2]/div[1]/div[2]/div[1]/div[2]/div[1]/div[1]/div[3]/div[1]/div[1]").fill("4242 4242 4242 4242")
-
-    page.locator("iframe[name=\"__privateStripeFrame6364\"]").content_frame().get_by_label(
-        "Credit or debit card number").fill("4242 4242 4242 4242")
-    page.locator("iframe[name=\"__privateStripeFrame6366\"]").content_frame().get_by_label("ZIP").fill("12345")
-    page.locator("iframe[name=\"__privateStripeFrame6365\"]").content_frame().get_by_label("Credit or debit card").fill(
-        "11 / 33")
-    page.locator("iframe[name=\"__privateStripeFrame6363\"]").content_frame().get_by_label(
-        "Credit or debit card CVC/CVV").fill("123")
+def apply_20_percent_discount(page, promocode):
+    page.get_by_text("Enter a promo code").click()
+    page.locator("button").filter(has_text="Apply").click()
 
 
 def ta_signup(pw1):
@@ -64,15 +59,19 @@ def ta_signup(pw1):
     page.get_by_text("Enter a promo code").click()
     # Make sure the Cancel button works
     page.locator("button").filter(has_text="Cancel").click()
-    # enter an invalid promo code
-    page.get_by_text("Enter a promo code").click()
-    page.locator("div").filter(has_text=re.compile(r"^ApplyPromo code$")).get_by_placeholder(" ").fill("11111")
-    # Click the Apply button
-    page.locator("button").filter(has_text="Apply").click()
-    # Verify the error message is displayed
-    expect(page.get_by_role("tooltip")).to_contain_text("Sorry, this code isn't valid")
-    # Now enter a valid code RRJ6POUG for 50% off
 
+    # Test for a bogus promo code first
+    enter_an_invalid_promo_code(page, "s9s9s9s")
+
+    """
+    Promo Code testing
+    RRJ6POUG for 50% off Monthly plan
+    J213BB9X for 20% off All plans
+    OAC14DAY extends 14 trial - no discounts
+    """
+    # See if Monthly promo code works for yearly plan. It should fail
+    page.locator("div").filter(has_text=re.compile(r"^ApplyPromo code$")).get_by_placeholder(" ").fill(os.getenv("FIFTY_PERCENT_OFF_MONTHLY_PLAN"))
+    expect(page.get_by_role("dialog")).to_contain_text("This promo code is not valid for this plan.")
 
 
     # from this point, we test the Payment Details modal
