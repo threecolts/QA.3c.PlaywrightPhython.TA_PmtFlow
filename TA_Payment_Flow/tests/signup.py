@@ -38,6 +38,12 @@ def enter_an_invalid_promo_code(page, promocode):
     expect(page.get_by_role("dialog")).to_contain_text("Enter a different promo code")
 
 
+def apply_50_percen_discount(page, promocode):
+    display_the_promo_code_field(page)
+    page.locator("div").filter(has_text=re.compile(r"^ApplyPromo code$")).get_by_placeholder(" ").fill(promocode)
+    page.locator("button").filter(has_text="Apply").click()
+
+
 def apply_20_percent_discount(page, promocode):
     display_the_promo_code_field(page)
     page.locator("button").filter(has_text="Apply").click()
@@ -77,8 +83,6 @@ def ta_signup(pw1):
     # page.locator("iframe[name=\"__privateStripeFrame2754\"]").content_frame().get_by_label(
     #     "Card number").fill("4242 4242 4242 42422")
 
-    # CLick on Enter a promo code
-    # page.get_by_text("Enter a promo code").click()
     display_the_promo_code_field(page)
 
     # Make sure the Cancel button works
@@ -94,12 +98,14 @@ def ta_signup(pw1):
     OAC14DAY extends 14 trial - no discounts
     """
 
-    # Display the promo code field again
+    # redisplay the promo code field again
     display_the_promo_code_field(page)
 
     # See if Monthly promo code works for yearly plan. It should fail
     page.locator("div").filter(has_text=re.compile(r"^ApplyPromo code$")).get_by_placeholder(" ").fill(os.getenv("FIFTY_PERCENT_OFF_MONTHLY_PLAN"))
 
+    # Click the Apply button
+    page.locator("button").filter(has_text="Apply").click()
     expect(page.get_by_role("dialog")).to_contain_text("This promo code is not valid for this plan.")
 
 
