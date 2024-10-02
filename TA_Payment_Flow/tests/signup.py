@@ -1,10 +1,34 @@
 import os
 import re
+from xmlrpc.client import boolean
+
 from playwright.sync_api import sync_playwright, expect
 from dotenv import load_dotenv
 load_dotenv()
 
 from common_functions import unique_credentials, display_initial_page
+
+def get_toggle_status(page):
+    # Locate the toggle
+    toggle_button = page.locator('button[role="switch"]')
+
+    # Check the value of aria-checked attribute
+    # False is Monthly, True is Yearly
+    is_checked = toggle_button.get_attribute('aria-checked')
+    if is_checked:
+        return 'Yearly'
+    else:
+        return 'Monthly'
+
+
+def set_subscription_toggle(page, desired_selection):
+    # Get the current plan type (Monthly or Yearly)
+    current_plan_type = get_toggle_status(page)
+
+    # If the current plan type is not what we want, click the toggle
+    if current_plan_type != desired_selection:
+        page.get_by_role("switch").click()
+
 
 def display_the_promo_code_field(page):
     # Displays the promo code field and finally, ensure it is empty
@@ -38,15 +62,22 @@ def enter_an_invalid_promo_code(page, promocode):
     expect(page.get_by_role("dialog")).to_contain_text("Enter a different promo code")
 
 
-def apply_50_percen_discount(page, promocode):
+def apply_50_percen_discount(page, promocode, plan_type):
+    # Apply a 50% promo code and verify its validity based on the plan type
     display_the_promo_code_field(page)
     page.locator("div").filter(has_text=re.compile(r"^ApplyPromo code$")).get_by_placeholder(" ").fill(promocode)
     page.locator("button").filter(has_text="Apply").click()
 
+    if plan_type == "monthly":
+        expect(page.get_by_role("tooltip")).to_contain_text("50% discount applied")
+    else:
+        expect(page.get_by_role("tooltip")).to_contain_text("This promo code is not valid for this plan.")
 
 def apply_20_percent_discount(page, promocode):
+    # Apply a 20% promo code and verify it's applied correctly
     display_the_promo_code_field(page)
     page.locator("button").filter(has_text="Apply").click()
+    expect(page.get_by_role("tooltip")).to_contain_text("20% discount applied")
 
 
 def ta_signup(pw1):
@@ -63,7 +94,7 @@ def ta_signup(pw1):
     # Click the Continue button
     page.get_by_label("tc-button").click()
 
-    # CLick on Reseller or Retailer
+    # CLick on Arbitrage
     page.get_by_text("Arbitrage", exact=True).click()
 
     # Click on Seller Central (Amazon)
@@ -108,6 +139,13 @@ def ta_signup(pw1):
     page.locator("button").filter(has_text="Apply").click()
     expect(page.get_by_role("dialog")).to_contain_text("This promo code is not valid for this plan.")
 
+    # Click, Change plan and Set Toggle to Monthly
+    page.get_by_text("Change plan").click()
+    set_subscription_toggle(page, "Monthly")
+
+    # Click, Change plan and set toggle to yearly
+    page.get_by_text("Change plan").click()
+    set_subscription_toggle(page, "Yearly")
 
     # from this point, we test the Payment Details modal
     # Verify the modal is displayed
