@@ -15,7 +15,7 @@ def get_toggle_status(page):
     # Check the value of aria-checked attribute
     # False is Monthly, True is Yearly
     is_checked = toggle_button.get_attribute('aria-checked')
-    if is_checked:
+    if is_checked == 'true':
         return 'Yearly'
     else:
         return 'Monthly'
@@ -31,24 +31,16 @@ def set_subscription_toggle(page, desired_selection):
 
 
 def display_the_promo_code_field(page):
-    # Displays the promo code field and finally, ensure it is empty
-    try:
-        # Try to find the link with the first text option
-        link = page.locator("text='Enter a promo code'")
-        expect(link).to_be_visible()  # Check if the element is visible
-        link.click()
-    except Exception as e:
-        # If the first text is not found, try the alternative text
-        try:
-            link = page.locator("text='Enter a different promo code'")
-            expect(link).to_be_visible()
-            link.click()
-        except Exception as e:
-            # Handle the case where neither link is found
-            print("Neither promo code link found.")
-    finally:
-        promo_code_field = page.locator("div", has_text=re.compile(r"^ApplyPromo code$")).locator("input[placeholder=' ']")
-        promo_code_field.fill("")
+    # Try to find either of the promo code links
+    promo_code_link = page.locator("text='Enter a promo code'").or_(page.locator("text='Enter a different promo code'"))
+
+    # Ensure the promo code link is visible and click it
+    expect(promo_code_link).to_be_visible()
+    promo_code_link.click()
+
+    # Ensure the promo code input field is cleared
+    promo_code_field = page.locator("div", has_text=re.compile(r'^ApplyPromo code$')).locator("input[placeholder=' ']")
+    promo_code_field.fill("")
 
 
 def enter_an_invalid_promo_code(page, promocode):
@@ -78,6 +70,34 @@ def apply_20_percent_discount(page, promocode):
     display_the_promo_code_field(page)
     page.locator("button").filter(has_text="Apply").click()
     expect(page.get_by_role("tooltip")).to_contain_text("20% discount applied")
+
+def verify_various_monthly_plans(page):
+    # Click the Change plan
+    page.get_by_text("Change plan").click()
+    # Full Suite price with Total Due of 0.00
+    page.locator("button").filter(has_text="Choose this plan").first.click()
+    expect(page.get_by_role("dialog")).to_contain_text("$129")
+    expect(page.get_by_role("dialog")).to_contain_text("$0.00")
+    # OA +Wholesale
+    page.get_by_text("Change plan").click()
+    page.locator("button").filter(has_text="Choose this plan").nth(1).click()
+    expect(page.get_by_role("dialog")).to_contain_text("$109")
+    expect(page.get_by_role("dialog")).to_contain_text("$0.00")
+    # Wholesale
+    page.get_by_text("Change plan").click()
+    page.locator("button").filter(has_text="Choose this plan").nth(2).click()
+    page.get_by_text("$69", exact=True).click()
+    expect(page.get_by_role("dialog")).to_contain_text("$0.00")
+    # Pro
+    page.get_by_text("Change plan").click()
+    page.locator("button").filter(has_text="Choose this plan").nth(3).click()
+    expect(page.get_by_role("dialog")).to_contain_text("$159")
+    expect(page.get_by_role("dialog")).to_contain_text("$0.00")
+    # FLip Pack
+    page.get_by_text("Change plan").click()
+    page.locator("button").filter(has_text="Choose this plan").nth(4).click()
+    expect(page.get_by_role("dialog")).to_contain_text("$59")
+    expect(page.get_by_role("dialog")).to_contain_text("$0.00")
 
 
 def ta_signup(pw1):
@@ -122,12 +142,7 @@ def ta_signup(pw1):
     # Test for a bogus promo code first
     enter_an_invalid_promo_code(page, "s9s9s9s")
 
-    """
-    Promo Code testing
-    RRJ6POUG for 50% off Monthly plan
-    J213BB9X for 20% off All plans
-    OAC14DAY extends 14 trial - no discounts
-    """
+    
 
     # redisplay the promo code field again
     display_the_promo_code_field(page)
@@ -143,9 +158,20 @@ def ta_signup(pw1):
     page.get_by_text("Change plan").click()
     set_subscription_toggle(page, "Monthly")
 
+    # Go back to the Payment modal
+    page.get_by_label("false").click()
+
+    # Check the prices for monthly plans
+    verify_various_monthly_plans(page)
+
+
+
     # Click, Change plan and set toggle to yearly
     page.get_by_text("Change plan").click()
     set_subscription_toggle(page, "Yearly")
+
+
+
 
     # from this point, we test the Payment Details modal
     # Verify the modal is displayed
