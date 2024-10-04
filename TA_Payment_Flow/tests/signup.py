@@ -1,6 +1,5 @@
 import os
 import re
-from xmlrpc.client import boolean
 
 from playwright.sync_api import sync_playwright, expect
 from dotenv import load_dotenv
@@ -20,19 +19,38 @@ def get_toggle_status(page):
     else:
         return 'Monthly'
 
+def click_change_plan_if_visible(page):
+    # Check if the "Change plan" button is visible
+    change_plan_button = page.locator("text='Change plan'")
+
+    if change_plan_button.is_visible():
+        # If visible, click the Change plan button
+        change_plan_button.click()
+    else:
+        # Return to Payment modal with the Back link
+        page.get_by_label("false").click()
+
 
 def set_subscription_toggle(page, desired_selection):
-    # Get the current plan type (Monthly or Yearly)
+    click_change_plan_if_visible(page)
+
+    # Sets the current plan type to Monthly or Yearly
     current_plan_type = get_toggle_status(page)
 
     # If the current plan type is not what we want, click the toggle
     if current_plan_type != desired_selection:
         page.get_by_role("switch").click()
 
+    # Return to Payment modal
+    page.get_by_label("false").click()
+
 
 def display_the_promo_code_field(page):
     # Try to find either of the promo code links
-    promo_code_link = page.locator("text='Enter a promo code'").or_(page.locator("text='Enter a different promo code'"))
+    # promo_code_link = page.locator("text='Enter a promo code'").or_(page.locator("text='Enter a different promo code'"))
+    promo_code_link = page.locator("text='Enter a promo code'")
+    if not promo_code_link.is_visible():
+        promo_code_link = page.locator("text='Enter a different promo code'")
 
     # Ensure the promo code link is visible and click it
     expect(promo_code_link).to_be_visible()
@@ -71,33 +89,40 @@ def apply_20_percent_discount(page, promocode):
     page.locator("button").filter(has_text="Apply").click()
     expect(page.get_by_role("tooltip")).to_contain_text("20% discount applied")
 
+
+def select_and_verify_plan(page, plan_index, expected_price):
+    """
+    Helper function to select a plan by index and verify the price and total due.
+    """
+    # Click the "Choose this plan" button for the given plan index
+    page.locator("button").filter(has_text="Choose this plan").nth(plan_index).click()
+
+    # Verify the expected price and that the total due is $0.00
+    expect(page.get_by_role("dialog")).to_contain_text(f"${expected_price}")
+    expect(page.get_by_role("dialog")).to_contain_text("$0.00")
+
+
 def verify_various_monthly_plans(page):
-    # Click the Change plan
-    page.get_by_text("Change plan").click()
-    # Full Suite price with Total Due of 0.00
-    page.locator("button").filter(has_text="Choose this plan").first.click()
-    expect(page.get_by_role("dialog")).to_contain_text("$129")
-    expect(page.get_by_role("dialog")).to_contain_text("$0.00")
-    # OA +Wholesale
-    page.get_by_text("Change plan").click()
-    page.locator("button").filter(has_text="Choose this plan").nth(1).click()
-    expect(page.get_by_role("dialog")).to_contain_text("$109")
-    expect(page.get_by_role("dialog")).to_contain_text("$0.00")
-    # Wholesale
-    page.get_by_text("Change plan").click()
-    page.locator("button").filter(has_text="Choose this plan").nth(2).click()
-    page.get_by_text("$69", exact=True).click()
-    expect(page.get_by_role("dialog")).to_contain_text("$0.00")
-    # Pro
-    page.get_by_text("Change plan").click()
-    page.locator("button").filter(has_text="Choose this plan").nth(3).click()
-    expect(page.get_by_role("dialog")).to_contain_text("$159")
-    expect(page.get_by_role("dialog")).to_contain_text("$0.00")
-    # FLip Pack
-    page.get_by_text("Change plan").click()
-    page.locator("button").filter(has_text="Choose this plan").nth(4).click()
-    expect(page.get_by_role("dialog")).to_contain_text("$59")
-    expect(page.get_by_role("dialog")).to_contain_text("$0.00")
+    # Ensure the toggle is in the Monthly position
+    set_subscription_toggle(page, "Monthly")
+
+    # Go back to the Payment modal
+    # page.get_by_label("false").click()
+
+    # Define the plans and their expected prices
+    plans = [
+        {"index": 0, "price": 129},  # Full Suite
+        {"index": 1, "price": 109},  # OA + Wholesale
+        {"index": 2, "price": 69},  # Wholesale
+        {"index": 3, "price": 159},  # Pro
+        {"index": 4, "price": 59}  # Flip Pack
+    ]
+    # Loop through each plan and verify its details
+    for plan in plans:
+        click_change_plan_if_visible(page)
+        select_and_verify_plan(page, plan["index"], plan["price"])
+        # Click "Change plan" each time to reset to the plan selection screen
+        click_change_plan_if_visible(page)
 
 
 def ta_signup(pw1):
@@ -127,12 +152,18 @@ def ta_signup(pw1):
     """
     # Enter name on pmt modal
     page.get_by_placeholder(" ", exact=True).fill("bill")
+
     """
     Having trouble with cc fields, skip for now
     """
     # Enter cc number
     # page.locator("iframe[name=\"__privateStripeFrame2754\"]").content_frame().get_by_label(
     #     "Card number").fill("4242 4242 4242 42422")
+
+    # Before we test the promo codes, verify the Monthly Plans
+    set_subscription_toggle(page, "Monthly")
+    verify_various_monthly_plans(page)
+
 
     display_the_promo_code_field(page)
 
@@ -142,7 +173,7 @@ def ta_signup(pw1):
     # Test for a bogus promo code first
     enter_an_invalid_promo_code(page, "s9s9s9s")
 
-    
+
 
     # redisplay the promo code field again
     display_the_promo_code_field(page)
@@ -164,13 +195,9 @@ def ta_signup(pw1):
     # Check the prices for monthly plans
     verify_various_monthly_plans(page)
 
-
-
     # Click, Change plan and set toggle to yearly
     page.get_by_text("Change plan").click()
     set_subscription_toggle(page, "Yearly")
-
-
 
 
     # from this point, we test the Payment Details modal
