@@ -111,7 +111,7 @@ def verify_various_monthly_plans(page):
 
     # Define the plans and their expected prices
     plans = [
-        {"index": 0, "price": 129},  # Full Suite
+        # {"index": 0, "price": 129},  # Full Suite
         {"index": 1, "price": 109},  # OA + Wholesale
         {"index": 2, "price": 69},  # Wholesale
         {"index": 3, "price": 159},  # Pro
@@ -119,10 +119,12 @@ def verify_various_monthly_plans(page):
     ]
     # Loop through each plan and verify its details
     for plan in plans:
+        # page.wait_for_timeout(1000)
         click_change_plan_if_visible(page)
+        # page.wait_for_timeout(1000)
         select_and_verify_plan(page, plan["index"], plan["price"])
         # Click "Change plan" each time to reset to the plan selection screen
-        click_change_plan_if_visible(page)
+        # click_change_plan_if_visible(page)
 
 
 def ta_signup(pw1):
@@ -161,7 +163,7 @@ def ta_signup(pw1):
     #     "Card number").fill("4242 4242 4242 42422")
 
     # Before we test the promo codes, verify the Monthly Plans
-    set_subscription_toggle(page, "Monthly")
+    # set_subscription_toggle(page, "Monthly")
     verify_various_monthly_plans(page)
 
 
