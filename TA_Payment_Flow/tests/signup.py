@@ -61,7 +61,7 @@ def display_the_promo_code_field(page):
     promo_code_field.fill("")
 
 
-def enter_an_invalid_promo_code(page, promocode):
+def verify_an_invalid_promo_code(page, promocode):
     # Enters an invalid code, verifies the error message, clicks the Cancel
     # button, verify the changed label text
     display_the_promo_code_field(page)
@@ -72,10 +72,10 @@ def enter_an_invalid_promo_code(page, promocode):
     expect(page.get_by_role("dialog")).to_contain_text("Enter a different promo code")
 
 
-def apply_50_percen_discount(page, promocode, plan_type):
+def apply_50_percent_discount(page, plan_type):
     # Apply a 50% promo code and verify its validity based on the plan type
     display_the_promo_code_field(page)
-    page.locator("div").filter(has_text=re.compile(r"^ApplyPromo code$")).get_by_placeholder(" ").fill(promocode)
+    page.locator("div").filter(has_text=re.compile(r"^ApplyPromo code$")).get_by_placeholder(" ").fill( os.getenv("FIFTY_PERCENT_OFF_MONTHLY_PLAN"))
     page.locator("button").filter(has_text="Apply").click()
 
     if plan_type == "monthly":
@@ -102,16 +102,14 @@ def select_and_verify_plan(page, plan_index, expected_price):
     expect(page.get_by_role("dialog")).to_contain_text("$0.00")
 
 
-def verify_various_monthly_plans(page):
+def verify_the_monthly_plans(page):
+    # This test does not include the 50% discount
     # Ensure the toggle is in the Monthly position
     set_subscription_toggle(page, "Monthly")
 
-    # Go back to the Payment modal
-    # page.get_by_label("false").click()
-
     # Define the plans and their expected prices
     plans = [
-        # {"index": 0, "price": 129},  # Full Suite
+        {"index": 0, "price": 129},  # Full Suite
         {"index": 1, "price": 109},  # OA + Wholesale
         {"index": 2, "price": 69},  # Wholesale
         {"index": 3, "price": 159},  # Pro
@@ -121,10 +119,9 @@ def verify_various_monthly_plans(page):
     for plan in plans:
         # page.wait_for_timeout(1000)
         click_change_plan_if_visible(page)
+
         # page.wait_for_timeout(1000)
         select_and_verify_plan(page, plan["index"], plan["price"])
-        # Click "Change plan" each time to reset to the plan selection screen
-        # click_change_plan_if_visible(page)
 
 
 def ta_signup(pw1):
@@ -163,25 +160,21 @@ def ta_signup(pw1):
     #     "Card number").fill("4242 4242 4242 42422")
 
     # Before we test the promo codes, verify the Monthly Plans
-    # set_subscription_toggle(page, "Monthly")
-    verify_various_monthly_plans(page)
-
-
-    display_the_promo_code_field(page)
+    # without the 50% discount
+    verify_the_monthly_plans(page)
 
     # Make sure the Cancel button works
+    display_the_promo_code_field(page)
     page.locator("button").filter(has_text="Cancel").click()
 
     # Test for a bogus promo code first
-    enter_an_invalid_promo_code(page, "s9s9s9s")
-
-
-
-    # redisplay the promo code field again
-    display_the_promo_code_field(page)
+    verify_an_invalid_promo_code(page, "s9s9s9s")
 
     # See if Monthly promo code works for yearly plan. It should fail
-    page.locator("div").filter(has_text=re.compile(r"^ApplyPromo code$")).get_by_placeholder(" ").fill(os.getenv("FIFTY_PERCENT_OFF_MONTHLY_PLAN"))
+    set_subscription_toggle(page, "Yearly")
+    # expect(page.get_by_role("dialog")).to_contain_text("Enter a different promo code")
+    # page.get_by_text("Enter a different promo code").click()
+    apply_50_percent_discount(page, plan_type="monthly")
 
     # Click the Apply button
     page.locator("button").filter(has_text="Apply").click()
