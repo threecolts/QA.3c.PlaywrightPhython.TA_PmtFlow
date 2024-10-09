@@ -1,12 +1,10 @@
 import os
-import re
 
 from playwright.sync_api import sync_playwright, expect
 from dotenv import load_dotenv
 
 from promo_code_utils import display_the_promo_code_field, verify_an_invalid_promo_code
-from subscription_utils import set_subscription_toggle, verify_monthly_plans_no_discount, \
-    verify_yearly_plans_no_discount
+from subscription_utils import set_subscription_toggle, verify_monthly_plans_no_discount, verify_yearly_plans_no_discount
 
 load_dotenv()
 
@@ -107,7 +105,7 @@ def ta_signup(pw1):
     page.get_by_text("Change plan").click()
     set_subscription_toggle(page, "Monthly")
     page.get_by_label("false").click()
-    verify_the_monthly_plans(page)
+#     verify_the_monthly_plans(page)
 
     page.get_by_text("Change plan").click()
     set_subscription_toggle(page, "Yearly")

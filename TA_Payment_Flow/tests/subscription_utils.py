@@ -1,5 +1,7 @@
+import os
 from playwright.sync_api import expect
 import re
+
 
 from promo_code_utils import display_the_promo_code_field
 
@@ -23,10 +25,17 @@ def set_subscription_toggle(page, desired_selection):
         page.get_by_role("switch").click()
     page.get_by_label("false").click()
 
+def reset_plan_choice(page):
+    click_change_plan_if_visible(page)
+    page.locator("button").filter(has_text="Choose this plan").nth(0).click()
+
+
 def select_and_verify_plan(page, plan_index, expected_price):
     page.locator("button").filter(has_text="Choose this plan").nth(plan_index).click()
     expect(page.get_by_role("dialog")).to_contain_text(f"${expected_price}")
     expect(page.get_by_role("dialog")).to_contain_text("$0.00")
+
+# def select_and_verify_yearly_plan(page, plan_index, expected_price):
 
 def verify_monthly_plans_no_discount(page):
     set_subscription_toggle(page, "Monthly")
@@ -40,6 +49,9 @@ def verify_monthly_plans_no_discount(page):
     for plan in plans:
         click_change_plan_if_visible(page)
         select_and_verify_plan(page, plan["index"], plan["price"])
+
+    # Reselect the "Online Arbitrage" choice
+    reset_plan_choice(page)
 
 def verify_monthly_plans_fifty_percent_discount(page):
     set_subscription_toggle(page, "Monthly")
@@ -57,15 +69,17 @@ def verify_monthly_plans_fifty_percent_discount(page):
 def verify_yearly_plans_no_discount(page):
     set_subscription_toggle(page, "Yearly")
     plans = [
-        {"index": 0, "price": 1290},
-        {"index": 1, "price": 1090},
-        {"index": 2, "price": 690},
-        {"index": 3, "price": 1490},
+        {"index": 1, "price": 1290},
+        {"index": 2, "price": 1090},
+        {"index": 3, "price": 690},
+        {"index": 4, "price": 1490},
         {"index": 4, "price": 590}
     ]
     for plan in plans:
         click_change_plan_if_visible(page)
         select_and_verify_plan(page, plan["index"], plan["price"])
+
+    reset_plan_choice(page)
 
 def apply_20_percent_discount(page, promocode):
     # Apply a 20% promo code and verify it's applied correctly
