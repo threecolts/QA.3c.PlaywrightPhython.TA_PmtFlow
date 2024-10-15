@@ -66,19 +66,24 @@ def verify_monthly_plans_fifty_percent_discount(page):
         click_change_plan_if_visible(page)
         select_and_verify_plan(page, plan["index"], plan["price"])
 
+    # Reselect the "Online Arbitrage" choice
+    reset_plan_choice(page)
+
 def verify_yearly_plans_no_discount(page):
     set_subscription_toggle(page, "Yearly")
     plans = [
+        {"index": 0, "price": 890},
         {"index": 1, "price": 1290},
         {"index": 2, "price": 1090},
         {"index": 3, "price": 690},
         {"index": 4, "price": 1490},
-        {"index": 4, "price": 590}
+        {"index": 5, "price": 590}
     ]
     for plan in plans:
         click_change_plan_if_visible(page)
         select_and_verify_plan(page, plan["index"], plan["price"])
 
+    # Reselect the "Online Arbitrage" choice
     reset_plan_choice(page)
 
 def apply_20_percent_discount(page, promocode):
