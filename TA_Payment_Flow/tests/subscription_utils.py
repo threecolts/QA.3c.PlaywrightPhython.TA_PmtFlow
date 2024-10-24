@@ -69,19 +69,47 @@ def verify_monthly_plans_fifty_percent_discount(page):
     # Reselect the "Online Arbitrage" choice
     reset_plan_choice(page)
 
+# def verify_yearly_plans_no_discount(page):
+#     set_subscription_toggle(page, "Yearly")
+#     plans = [
+#         # {"index": 0, "price": 890},
+#         {"index": 1, "price": 1290},
+#         {"index": 2, "price": 1090},
+#         {"index": 3, "price": 690},
+#         {"index": 4, "price": 1490},
+#         {"index": 5, "price": 590}
+#     ]
+#     for plan in reversed(plans):
+#         click_change_plan_if_visible(page)
+#         select_and_verify_plan(page, plan["index"], plan["price"])
+
 def verify_yearly_plans_no_discount(page):
     set_subscription_toggle(page, "Yearly")
-    plans = [
-        {"index": 0, "price": 890},
-        {"index": 1, "price": 1290},
-        {"index": 2, "price": 1090},
-        {"index": 3, "price": 690},
-        {"index": 4, "price": 1490},
-        {"index": 5, "price": 590}
-    ]
-    for plan in plans:
-        click_change_plan_if_visible(page)
-        select_and_verify_plan(page, plan["index"], plan["price"])
+    page.get_by_text("Change plan").click()
+    page.locator("button").filter(has_text="Choose this plan").nth(4).click()
+    expect(page.get_by_role("dialog")).to_contain_text("$590")
+    expect(page.get_by_role("dialog")).to_contain_text("$0.00")
+    page.get_by_text("Change plan").click()
+    page.locator("button").filter(has_text="Choose this plan").nth(4).click()
+    expect(page.get_by_role("dialog")).to_contain_text("$1,490")
+    expect(page.get_by_role("dialog")).to_contain_text("$0.00")
+    page.get_by_text("Change plan").click()
+    page.locator("button").filter(has_text="Choose this plan").nth(3).click()
+    expect(page.get_by_role("dialog")).to_contain_text("$690")
+    expect(page.get_by_role("dialog")).to_contain_text("$0.00")
+    page.get_by_text("Change plan").click()
+    page.locator("button").filter(has_text="Choose this plan").nth(2).click()
+    expect(page.get_by_role("dialog")).to_contain_text("$1,090")
+    expect(page.get_by_role("dialog")).to_contain_text("$0.00")
+    page.get_by_text("Change plan").click()
+    page.locator("button").filter(has_text="Choose this plan").nth(1).click()
+    expect(page.get_by_role("dialog")).to_contain_text("$1,290")
+    expect(page.get_by_role("dialog")).to_contain_text("$0.00")
+    page.get_by_text("Change plan").click()
+    page.locator("button").filter(has_text="Choose this plan").first.click()
+    expect(page.get_by_role("dialog")).to_contain_text("$890")
+    expect(page.get_by_role("dialog")).to_contain_text("$0.00")
+
 
     # Reselect the "Online Arbitrage" choice
     reset_plan_choice(page)

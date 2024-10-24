@@ -18,3 +18,8 @@ def verify_an_invalid_promo_code(page, promocode):
     expect(page.get_by_role("tooltip")).to_contain_text("Sorry, this code isn't valid")
     page.locator("button").filter(has_text="Cancel").click()
     expect(page.get_by_role("dialog")).to_contain_text("Enter a different promo code")
+
+def apply_monthly_fifty_percent_discount_code(page, promocode):
+    display_the_promo_code_field(page)
+    page.locator("div").filter(has_text=re.compile(r"^ApplyPromo code$")).get_by_placeholder(" ").fill(promocode)
+    page.locator("button").filter(has_text="Apply").click()

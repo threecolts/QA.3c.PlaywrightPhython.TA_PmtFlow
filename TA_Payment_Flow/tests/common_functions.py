@@ -11,7 +11,7 @@ load_dotenv()
 
 def unique_credentials():
     mail_suffix = random.randint(10000000, 90000000)  # Generate a random 8-digit number
-    user_email = f'wbarnes+{mail_suffix}@threecolts.com'
+    user_email = f'wbarnes+{mail_suffix}@ypomail.com'
     full_name = f'wbarnes {mail_suffix}'
     user_pass = os.getenv("STAGE_MANAGER_TESTING_PW")
     return user_email, full_name, user_pass
